@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+</head>
+<body>
+    <div id="map" style="height: 100vh;"></div>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        // Get destination from URL params
+        const urlParams = new URLSearchParams(window.location.search);
+        const destLat = urlParams.get('lat') || 34.0522;
+        const destLon = urlParams.get('lon') || -118.2437;
+        
+        // Initialize map
+        const map = L.map('map').setView([destLat, destLon], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        
+        // Get user location and show route
+        navigator.geolocation.getCurrentPosition(function(position) {
+            const userLat = position.coords.latitude;
+            const userLon = position.coords.longitude;
+            
+            // Add markers
+            L.marker([userLat, userLon]).addTo(map).bindPopup('Your Location');
+            L.marker([destLat, destLon]).addTo(map).bindPopup('Destination');
+            
+            // Get route from OSRM (free)
+            fetch(`https://router.project-osrm.org/route/v1/driving/${userLon},${userLat};${destLon},${destLat}?overview=full&geometries=polyline`)
+                .then(response => response.json())
+                .then(data => {
+                    // Display route line
+                    const route = L.Polyline.fromEncoded(data.routes[0].geometry);
+                    route.addTo(map);
+                    map.fitBounds(route.getBounds());
+                });
+        });
+    </script>
+</body>
+</html>
